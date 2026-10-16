@@ -138,7 +138,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       return res.json({ token, user });
     }
 
-    return res.redirect(`${env.FRONTEND_URL}/dashboard?token=${token}`);
+    return res.redirect(`${env.FRONTEND_URL}/auth/callback?token=${token}`);
   } catch (err: any) {
     console.error('❌ Error handling Google OAuth callback:', err.message);
     return res.redirect(`${env.FRONTEND_URL}/login?error=authentication_failed`);

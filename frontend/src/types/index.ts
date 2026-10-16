@@ -48,7 +48,7 @@ export interface EmailStats {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
+  emails: T[];
   total: number;
   page: number;
   limit: number;

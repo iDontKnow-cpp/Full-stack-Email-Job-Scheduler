@@ -138,7 +138,7 @@ export const SentEmailsTable: React.FC = () => {
       {/* Main Table */}
       <Table
         columns={columns}
-        data={data?.data || []}
+        data={data?.emails || []}
         isLoading={isLoading}
         page={data?.page || page}
         limit={data?.limit || limit}

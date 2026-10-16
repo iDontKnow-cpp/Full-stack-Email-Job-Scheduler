@@ -126,7 +126,7 @@ export const ScheduledEmailsTable: React.FC<ScheduledEmailsTableProps> = ({
       {/* Main Table */}
       <Table
         columns={columns}
-        data={data?.data || []}
+        data={data?.emails || []}
         isLoading={isLoading}
         page={data?.page || page}
         limit={data?.limit || limit}
