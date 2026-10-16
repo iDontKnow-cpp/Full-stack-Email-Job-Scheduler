@@ -173,22 +173,38 @@ ELASTICSEARCH_URL=http://localhost:9200
 
 ---
 
-### 2. Start Infrastructure (PostgreSQL, Redis, Elasticsearch)
+### 2. Run the Full Stack with Docker Compose
 
-Start all backing services using Docker Compose:
+Docker Compose builds and starts the database, Redis, Elasticsearch, backend, and frontend. It waits for PostgreSQL, Redis, and Elasticsearch to become healthy, then applies the Prisma schema before starting the backend.
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
-This starts:
-- **Redis** on `localhost:6379` (with AOF persistence enabled)
-- **PostgreSQL 15** on `localhost:5432` (`user: scheduler`, `password: scheduler123`, `db: email_scheduler`)
-- **Elasticsearch 8.11** on `localhost:9200` (single-node, security disabled for local dev)
+Open the dashboard at **`http://localhost:30080`**. The backend API is also exposed at `http://localhost:3001`, and the Bull Board queue dashboard is at `http://localhost:30080/admin/queues`.
+
+View startup logs or stop the stack with:
+
+```bash
+docker compose logs -f backend-service
+docker compose down
+```
+
+`docker compose down` preserves the named database, Redis, and Elasticsearch volumes. To remove those data volumes as well, use `docker compose down -v`.
+
+For Google or Slack OAuth during local Compose use, configure the matching client credentials in `backend/.env` and use the callback URLs on `http://localhost:30080`.
+
+### 3. Run Services Manually (Optional)
+
+To run the backend and frontend outside Docker, start only the infrastructure services:
+
+```bash
+docker compose up -d postgres redis elasticsearch
+```
 
 ---
 
-### 3. Initialize Database
+### 4. Initialize Database
 
 Run Prisma migrations/push to initialize the schema:
 
@@ -204,7 +220,7 @@ npm run db:seed
 
 ---
 
-### 4. Start Backend Server & Worker
+### 5. Start Backend Server & Worker
 
 In the `backend` directory:
 
@@ -221,7 +237,7 @@ The backend starts:
 
 ---
 
-### 5. Start Frontend Dashboard
+### 6. Start Frontend Dashboard
 
 In a separate terminal, navigate to `frontend`:
 
@@ -569,4 +585,3 @@ To simulate 1000+ emails scheduled simultaneously:
 
 Repository maintained for ReachInbox technical review.
 Access granted to reviewers: `Mitrajit` and `Yadav036`.
-
