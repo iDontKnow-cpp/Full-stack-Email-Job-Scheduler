@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  googleId         String      @unique
+  email            String      @unique
+  name             String
+  avatar           String?
+  slackAccessToken String?
+  slackChannel     String?
+  slackTeamName    String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  emailJobs        EmailJob[]
+  campaigns        Campaign[]
+}
+
+model Campaign {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  subject      String
+  body         String         @db.Text
+  senderEmail  String
+  totalEmails  Int
+  sentCount    Int            @default(0)
+  failedCount  Int            @default(0)
+  delaySeconds Int            @default(2)
+  hourlyLimit  Int            @default(200)
+  startTime    DateTime
+  status       CampaignStatus @default(SCHEDULED)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  emailJobs    EmailJob[]
+}
+
+model EmailJob {
+  id             String      @id @default(uuid())
+  campaignId     String?
+  campaign       Campaign?   @relation(fields: [campaignId], references: [id])
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  to             String
+  subject        String
+  body           String      @db.Text
+  senderEmail    String
+  status         EmailStatus @default(SCHEDULED)
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  error          String?
+  bullJobId      String?     @unique
+  idempotencyKey String      @unique
+  etherealUrl    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([senderEmail])
+  @@index([userId])
+}
+
+enum EmailStatus {
+  SCHEDULED
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  RATE_LIMITED
+}
+
+enum CampaignStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
