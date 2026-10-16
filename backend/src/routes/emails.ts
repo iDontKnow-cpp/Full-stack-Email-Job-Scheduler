@@ -52,8 +52,8 @@ router.post(
         baseStartTime.getTime() < now.getTime() ? now : baseStartTime;
 
       // Deduplicate recipients
-      const uniqueRecipients = Array.from(
-        new Set(recipients.map((r: string) => r.trim().toLowerCase()))
+      const uniqueRecipients: string[] = Array.from(
+        new Set<string>(recipients.map((r: string) => r.trim().toLowerCase()))
       );
 
       // 1. Create Campaign
