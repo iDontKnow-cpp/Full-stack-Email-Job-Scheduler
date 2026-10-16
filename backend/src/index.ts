@@ -73,9 +73,16 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// 5. Recovery mechanism on startup
+// 5. Recovery mechanism on startup (Safe across multi-replica horizontal scaling)
 async function recoverPendingJobs() {
   try {
+    // Acquire a 60-second distributed lock so only one replica performs recovery during pod scaling
+    const lockAcquired = await redis.set('lock:startup_recovery', '1', 'EX', 60, 'NX');
+    if (!lockAcquired) {
+      console.log('ℹ️ Another replica is already running startup recovery scan. Skipping.');
+      return;
+    }
+
     const now = new Date();
     // Find scheduled/queued emails whose scheduled time has arrived or passed
     const pendingJobs = await prisma.emailJob.findMany({

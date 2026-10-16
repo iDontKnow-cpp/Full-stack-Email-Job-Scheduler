@@ -234,6 +234,164 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
+## ☸️ Kubernetes Deployment with Horizontal Pod Autoscaling (HPA)
+
+For production-grade scalability, fault tolerance, and automated load balancing, the scheduler can be deployed to any Kubernetes cluster (Minikube, Kind, k3s, EKS, GKE, AKS, or bare metal).
+
+### 🏗 Kubernetes Architecture Overview
+
+```
+                                [ External Ingress / NodePort 30080 ]
+                                                  │
+                      ┌───────────────────────────┴───────────────────────────┐
+                      │                                                       │
+               [ /api , /admin/queues ]                                    [ / (SPA) ]
+                      ▼                                                       ▼
+            ┌───────────────────┐                                   ┌───────────────────┐
+            │  backend-service  │                                   │  frontend-service │
+            │   (ClusterIP)     │                                   │ (NodePort: 30080) │
+            └─────────┬─────────┘                                   └─────────┬─────────┘
+                      │                                                       │
+                      ▼                                                       ▼
+            ┌───────────────────┐                                   ┌───────────────────┐
+            │backend-deployment │◄─── [ backend-hpa ]               │frontend-deployment│◄─── [ frontend-hpa ]
+            │  (2 - 10 Replicas)│     (CPU > 70%, Mem > 80%)        │  (2 - 8 Replicas) │     (CPU > 75%)
+            └─────────┬─────────┘                                   └───────────────────┘
+                      │
+         ┌────────────┼────────────┐
+         ▼            ▼            ▼
+   ┌───────────┐┌───────────┐┌───────────────┐
+   │ postgres  ││   redis   ││ elasticsearch │
+   │ (Stateful ││ (Stateful ││  (Stateful    │
+   │  PVC 5Gi) ││  PVC 2Gi) ││   PVC 5Gi)    │
+   └───────────┘└───────────┘└───────────────┘
+```
+
+### 1. Build Docker Images
+
+Build both multi-stage, production-optimized container images:
+
+```bash
+# Build backend (Alpine, dumb-init, non-root user, multi-stage)
+docker build -t email-scheduler-backend:latest ./backend
+
+# Build frontend (Alpine, Nginx reverse-proxy & SPA fallback, multi-stage)
+docker build -t email-scheduler-frontend:latest ./frontend
+```
+
+*(Or use the convenience npm command from the root directory)*:
+```bash
+npm run docker:build
+```
+
+> **Minikube / Kind users**: If using a local cluster, load the images directly into your cluster:
+> ```bash
+> # For Minikube:
+> minikube image load email-scheduler-backend:latest
+> minikube image load email-scheduler-frontend:latest
+>
+> # For Kind:
+> kind load docker-image email-scheduler-backend:latest
+> kind load docker-image email-scheduler-frontend:latest
+> ```
+
+---
+
+### 2. Deploy Everything with a Single Command
+
+All Kubernetes manifests are bundled with **Kustomize** inside [`k8s/`](file:///home/u/Projects/Full-stack%20Email%20Job%20Scheduler/k8s/):
+
+```bash
+kubectl apply -k k8s/
+```
+
+This creates:
+- **Namespace**: `email-scheduler`
+- **ConfigMap & Secret**: Shared environment variables, Redis/Postgres/ES endpoints, and secrets
+- **Stateful Storage (PVCs)**:
+  - `postgres-pvc` (5Gi)
+  - `redis-pvc` (2Gi)
+  - `elasticsearch-pvc` (5Gi)
+- **Infrastructure Services**:
+  - `postgres-service:5432`
+  - `redis-service:6379`
+  - `elasticsearch-service:9200`
+- **Database Initialization Job**: One-time `prisma-db-push` job that runs `npx prisma db push` to prepare the database schema
+- **Backend Deployment & Service**:
+  - `backend-deployment` (2 initial replicas, rolling updates, readiness & liveness probes on `/health`)
+  - `backend-service:3001` (ClusterIP)
+- **Frontend Deployment & Service**:
+  - `frontend-deployment` (2 initial replicas, Nginx SPA router, readiness & liveness probes on `/healthz`)
+  - `frontend-service` (NodePort `30080` for immediate browser access)
+- **Horizontal Pod Autoscalers (HPA)**:
+  - `backend-hpa`: Scales from **2 to 10 pods** based on CPU (> 70%) and Memory (> 80%)
+  - `frontend-hpa`: Scales from **2 to 8 pods** based on CPU (> 75%)
+- **Ingress**: Reverse proxy rules routing `/api` and `/admin/queues` to the backend, and `/` to the frontend
+
+---
+
+### 3. Check Deployment & Autoscaler Status
+
+```bash
+kubectl get all,hpa,pvc -n email-scheduler
+```
+
+Example output:
+```
+NAME                                       READY   STATUS      RESTARTS   AGE
+pod/backend-deployment-7bb5df74bf-42x8l    1/1     Running     0          45s
+pod/backend-deployment-7bb5df74bf-z89pk    1/1     Running     0          45s
+pod/elasticsearch-69f8897587-n624p         1/1     Running     0          45s
+pod/frontend-deployment-79549cd97c-k987m   1/1     Running     0          45s
+pod/frontend-deployment-79549cd97c-q542l   1/1     Running     0          45s
+pod/postgres-74567ffbb9-wtxvl              1/1     Running     0          45s
+pod/prisma-db-push-6z4lp                   0/1     Completed   0          35s
+pod/redis-66b9f485db-87vbx                 1/1     Running     0          45s
+
+NAME                                            REFERENCE                       TARGETS                       MINPODS   MAXPODS   REPLICAS
+horizontalpodautoscaler.autoscaling/backend-hpa   Deployment/backend-deployment   cpu: 12%/70%, mem: 34%/80%    2         10        2
+horizontalpodautoscaler.autoscaling/frontend-hpa  Deployment/frontend-deployment  cpu: 5%/75%                   2         8         2
+```
+
+---
+
+### 4. Access the Application
+
+- **Frontend Dashboard**:
+  - Via NodePort: [`http://localhost:30080`](http://localhost:30080)
+  - Via Minikube service URL: `minikube service frontend-service -n email-scheduler`
+  - Via Ingress (if ingress controller is enabled): `http://localhost/`
+- **Bull Board Queue Dashboard**: [`http://localhost:30080/admin/queues`](http://localhost:30080/admin/queues)
+- **Backend API Health Check**: [`http://localhost:30080/api/health`](http://localhost:30080/api/health)
+
+---
+
+### 5. How Horizontal Pod Autoscaling (HPA) Works in this System
+
+1. **Distributed Queue Processing**:
+   - Each backend replica runs both the Express API and a BullMQ Worker instance with 5 concurrent workers.
+   - When 2 pods are running, the cluster handles **10 concurrent jobs**.
+   - As traffic or scheduled job volume surges and CPU/Memory exceeds thresholds, HPA scales the backend up to **10 pods**, delivering **50 concurrent workers**.
+2. **Race-Condition & Duplicate Prevention**:
+   - **Startup Recovery Lock**: When new backend pods spin up simultaneously during scale-out, a Redis distributed lock (`lock:startup_recovery`) ensures only one pod runs the database recovery scan.
+   - **Queue Level Idempotency**: Jobs are registered with a deterministic `jobId: emailJob.emailJobId`. If multiple workers attempt to enqueue the same job, Redis atomically ignores duplicates.
+   - **Atomic Rate Limiter**: All scaled worker pods share the same atomic Redis Lua script counter (`ratelimit:{senderEmail}:{hourWindow}`). Concurrency across pods never compromises hourly limits.
+3. **Graceful Scale-Down**:
+   - Scale-down stabilization window is configured to **300 seconds (5 minutes)**. This prevents premature pod termination during temporary rate-limiting pauses or short job gaps.
+   - `dumb-init` traps SIGTERM and triggers graceful worker shutdown, finishing currently active SMTP socket sends before the pod terminates.
+
+---
+
+### 6. Clean Up Kubernetes Resources
+
+To delete all deployments, services, pods, and PVCs:
+
+```bash
+kubectl delete -k k8s/
+```
+
+---
+
 ## 📧 Ethereal Email Configuration
 
 Ethereal is a fake SMTP service used for testing email deliveries safely:

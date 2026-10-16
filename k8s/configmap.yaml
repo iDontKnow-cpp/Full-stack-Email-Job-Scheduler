@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: email-scheduler
+data:
+  PORT: "3001"
+  NODE_ENV: "production"
+  FRONTEND_URL: "http://localhost:30080"
+
+  # Internal cluster DNS endpoints
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  ELASTICSEARCH_URL: "http://elasticsearch-service:9200"
+
+  # BullMQ & Rate Limiter settings
+  WORKER_CONCURRENCY: "5"
+  MIN_DELAY_BETWEEN_EMAILS_MS: "2000"
+  MAX_EMAILS_PER_HOUR_PER_SENDER: "200"
+
+  # OAuth Callback URLs
+  GOOGLE_CALLBACK_URL: "http://localhost:30080/api/auth/google/callback"
+  SLACK_REDIRECT_URI: "http://localhost:30080/api/slack/callback"
+

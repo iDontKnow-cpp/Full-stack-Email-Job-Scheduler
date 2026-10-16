@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prisma-db-push
+  namespace: email-scheduler
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: prisma-db-push
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: prisma-migrate
+          image: email-scheduler-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - npx
+            - prisma
+            - db
+            - push
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretKeyRef:
+                name: app-secrets
+

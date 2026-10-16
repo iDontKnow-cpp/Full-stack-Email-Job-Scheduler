@@ -15,6 +15,14 @@
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:preview": "npm --prefix frontend run preview",
+    "docker:build:backend": "docker build -t email-scheduler-backend:latest ./backend",
+    "docker:build:frontend": "docker build -t email-scheduler-frontend:latest ./frontend",
+    "docker:build": "npm run docker:build:backend && npm run docker:build:frontend",
+    "k8s:apply": "kubectl apply -k k8s/",
+    "k8s:delete": "kubectl delete -k k8s/",
+    "k8s:status": "kubectl get all,hpa,pvc,ingress -n email-scheduler",
+    "k8s:logs:backend": "kubectl logs -n email-scheduler -l app=backend -f",
+    "k8s:logs:frontend": "kubectl logs -n email-scheduler -l app=frontend -f",
     "build": "npm --prefix backend run build && npm --prefix frontend run build"
   },
   "keywords": [
