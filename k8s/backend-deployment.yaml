@@ -32,6 +32,9 @@ spec:
                 name: app-config
             - secretRef:
                 name: app-secrets
+            - secretRef:
+                name: google-oauth
+                optional: true
           resources:
             requests:
               cpu: 100m
