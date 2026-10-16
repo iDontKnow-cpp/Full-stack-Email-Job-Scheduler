@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: full-stack-email-job-scheduler:front.1
+          image: ujjwalrajpurohit/full-stack-email-job-scheduler:front.1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
@@ -48,4 +48,3 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 2
-
