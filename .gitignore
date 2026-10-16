@@ -9,3 +9,5 @@ yarn-error.log*
 .DS_Store
 vite.config.js
 vite.config.d.ts
+secret.yaml
+.gitignore
