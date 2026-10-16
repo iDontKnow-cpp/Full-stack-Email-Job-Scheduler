@@ -13,7 +13,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: prisma-migrate
-          image: email-scheduler-backend:latest
+          image: full-stack-email-job-scheduler:back.1 
           imagePullPolicy: IfNotPresent
           command:
             - npx
@@ -23,6 +23,5 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
-            - secretKeyRef:
+            - secretRef:
                 name: app-secrets
-

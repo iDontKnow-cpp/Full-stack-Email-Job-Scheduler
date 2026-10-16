@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: email-scheduler-backend:latest
+          image: full-stack-email-job-scheduler:back.1 
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
@@ -30,7 +30,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
-            - secretKeyRef:
+            - secretRef:
                 name: app-secrets
           resources:
             requests:
@@ -53,4 +53,3 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 3
-
