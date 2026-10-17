@@ -28,17 +28,20 @@ export function useAuth() {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: apiLogout,
-    onSuccess: () => {
-      queryClient.setQueryData(['auth', 'me'], null);
-      queryClient.clear();
-      navigate('/login');
+    mutationFn: async () => {
+      try {
+        await apiLogout();
+      } catch (err) {
+        console.warn('API logout network call failed, continuing with client cleanup:', err);
+      }
+      localStorage.removeItem('auth_token');
+      document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0;';
     },
-    onError: () => {
-      // Even if network error occurs on logout, clear local query cache and redirect
+    onSettled: () => {
       queryClient.setQueryData(['auth', 'me'], null);
+      queryClient.removeQueries({ queryKey: ['auth'] });
       queryClient.clear();
-      navigate('/login');
+      navigate('/login', { replace: true });
     },
   });
 
@@ -46,7 +49,7 @@ export function useAuth() {
     user: user || null,
     isLoading,
     isAuthenticated: !!user && !isError,
-    logout: () => logoutMutation.mutate(),
+    logout: () => logoutMutation.mutateAsync(),
     isLoggingOut: logoutMutation.isPending,
   };
 }

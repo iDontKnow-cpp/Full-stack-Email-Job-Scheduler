@@ -135,10 +135,18 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    // Set cookie
+    const isHttps =
+      req.secure ||
+      req.headers['x-forwarded-proto'] === 'https' ||
+      Boolean(req.headers['cf-visitor']?.includes('https')) ||
+      Boolean(req.headers['cf-ray']) ||
+      baseUrl.startsWith('https://');
+
+    // Set cookie with explicit root path and protocol-aware secure attribute
     res.cookie('token', token, {
+      path: '/',
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
+      secure: isHttps,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -237,13 +245,43 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/logout
- * Clears JWT auth cookie
+ * Clears JWT auth cookie across both HTTP and HTTPS / Tunnel environments
  */
 router.post('/logout', (req: Request, res: Response) => {
+  // Clear Secure version (used in production / Cloudflare tunnel / HTTPS)
   res.clearCookie('token', {
+    path: '/',
     httpOnly: true,
+    secure: true,
     sameSite: 'lax',
   });
+
+  // Clear non-Secure version (used in local development / direct HTTP)
+  res.clearCookie('token', {
+    path: '/',
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+  });
+
+  // Clear fallback jwt cookie
+  res.clearCookie('jwt', {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+  });
+  res.clearCookie('jwt', {
+    path: '/',
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+  });
+
+  if (req.session) {
+    req.session.destroy(() => {});
+  }
+
   res.json({ success: true, message: 'Logged out successfully' });
 });
 

@@ -3,6 +3,7 @@ import { WebClient } from '@slack/web-api';
 import { env } from '../config/env';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
+import { getBaseUrl } from '../lib/url';
 
 const router = Router();
 
@@ -19,12 +20,15 @@ router.get('/connect', requireAuth, (req: Request, res: Response) => {
     });
   }
 
+  const baseUrl = getBaseUrl(req);
+  const redirectUri = `${baseUrl}/api/slack/callback`;
+
   const scopes = ['chat:write', 'channels:read'].join(',');
   const slackAuthUrl =
     `https://slack.com/oauth/v2/authorize?client_id=${encodeURIComponent(
       env.SLACK_CLIENT_ID
     )}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(
-      env.SLACK_REDIRECT_URI
+      redirectUri
     )}&state=${encodeURIComponent(userId)}`;
 
   res.redirect(slackAuthUrl);
@@ -40,10 +44,12 @@ router.get('/callback', async (req: Request, res: Response) => {
     state?: string;
     error?: string;
   };
+  const baseUrl = getBaseUrl(req);
+  const redirectUri = `${baseUrl}/api/slack/callback`;
 
   if (error) {
     console.error('Slack OAuth error callback:', error);
-    return res.redirect(`${env.FRONTEND_URL}/dashboard?slack=error&message=${encodeURIComponent(error)}`);
+    return res.redirect(`${baseUrl}/dashboard?slack=error&message=${encodeURIComponent(error)}`);
   }
 
   if (!code || !userId) {
@@ -56,12 +62,12 @@ router.get('/callback', async (req: Request, res: Response) => {
       client_id: env.SLACK_CLIENT_ID,
       client_secret: env.SLACK_CLIENT_SECRET,
       code,
-      redirect_uri: env.SLACK_REDIRECT_URI,
+      redirect_uri: redirectUri,
     });
 
     if (!response.ok || !response.access_token) {
       console.error('Failed to exchange Slack OAuth code:', response.error);
-      return res.redirect(`${env.FRONTEND_URL}/dashboard?slack=failed`);
+      return res.redirect(`${baseUrl}/dashboard?slack=failed`);
     }
 
     const accessToken = response.access_token;
