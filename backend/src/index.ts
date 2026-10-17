@@ -173,9 +173,24 @@ let emailWorker: ReturnType<typeof createEmailWorker> | null = null;
 
 async function bootstrap() {
   try {
-    // Test Prisma DB connection
-    await prisma.$connect();
-    console.log('📦 Connected to PostgreSQL database via Prisma');
+    // Connect to PostgreSQL database via Prisma with retry loop
+    let dbConnected = false;
+    let attempts = 0;
+    const maxAttempts = 15;
+    while (!dbConnected && attempts < maxAttempts) {
+      try {
+        attempts++;
+        await prisma.$connect();
+        dbConnected = true;
+        console.log('📦 Connected to PostgreSQL database via Prisma');
+      } catch (dbErr: any) {
+        if (attempts >= maxAttempts) {
+          throw new Error(`Failed to connect to database after ${maxAttempts} attempts: ${dbErr.message}`);
+        }
+        console.warn(`⏳ Waiting for database to be ready (attempt ${attempts}/${maxAttempts})...`);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
 
     // Initialize Ethereal transporter
     await getTransporter();
