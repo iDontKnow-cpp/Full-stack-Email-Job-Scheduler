@@ -194,6 +194,16 @@ docker compose down
 
 For Google or Slack OAuth during local Compose use, configure the matching client credentials in `backend/.env` and use the callback URLs on `http://localhost:30080`.
 
+For OAuth through a Cloudflare Tunnel, open the app using the tunnel's HTTPS hostname and set these Compose variables to that same hostname before starting the stack:
+
+```bash
+export FRONTEND_URL=https://your-tunnel-hostname
+export GOOGLE_CALLBACK_URL=https://your-tunnel-hostname/api/auth/google/callback
+docker compose up --build -d
+```
+
+Add the exact `GOOGLE_CALLBACK_URL` value to the Google OAuth client's **Authorized redirect URIs**. For a temporary `trycloudflare.com` tunnel, update these values and Google's URI whenever the tunnel hostname changes. Google and the app must use the same callback URL, including scheme, hostname, port, and path.
+
 ### 3. Run Services Manually (Optional)
 
 To run the backend and frontend outside Docker, start only the infrastructure services:
