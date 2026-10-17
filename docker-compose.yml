@@ -74,11 +74,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      FRONTEND_URL: http://localhost:30080
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:30080}
       DATABASE_URL: postgresql://scheduler:scheduler123@postgres:5432/email_scheduler?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      GOOGLE_CALLBACK_URL: http://localhost:30080/api/auth/google/callback
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:30080/api/auth/google/callback}
       SLACK_REDIRECT_URI: http://localhost:30080/api/slack/callback
       ELASTICSEARCH_URL: http://elasticsearch:9200
     ports:

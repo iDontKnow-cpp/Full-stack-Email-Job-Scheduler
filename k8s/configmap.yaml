@@ -6,7 +6,7 @@ metadata:
 data:
   PORT: "3001"
   NODE_ENV: "production"
-  FRONTEND_URL: "http://localhost:30080"
+  FRONTEND_URL: "https://camping-rid-restaurants-cleaners.trycloudflare.com"
 
   # Internal cluster DNS endpoints
   REDIS_HOST: "redis-service"
@@ -19,6 +19,5 @@ data:
   MAX_EMAILS_PER_HOUR_PER_SENDER: "200"
 
   # OAuth Callback URLs
-  GOOGLE_CALLBACK_URL: "http://localhost:30080/api/auth/google/callback"
-  SLACK_REDIRECT_URI: "http://localhost:30080/api/slack/callback"
-
+  GOOGLE_CALLBACK_URL: "https://camping-rid-restaurants-cleaners.trycloudflare.com/api/auth/google/callback"
+  SLACK_REDIRECT_URI: "https://camping-rid-restaurants-cleaners.trycloudflare.com/api/slack/callback"

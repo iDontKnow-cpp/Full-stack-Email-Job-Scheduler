@@ -5,8 +5,6 @@ import { env } from '../config/env';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
 
-import { getBaseUrl } from '../lib/url';
-
 const router = Router();
 
 const oauth2Client = new OAuth2Client(
@@ -27,9 +25,6 @@ router.get('/google', (req: Request, res: Response) => {
     });
   }
 
-  const baseUrl = getBaseUrl(req);
-  const redirectUri = `${baseUrl}/api/auth/google/callback`;
-
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: [
@@ -38,7 +33,7 @@ router.get('/google', (req: Request, res: Response) => {
       'openid',
     ],
     prompt: 'select_account',
-    redirect_uri: redirectUri,
+    redirect_uri: env.GOOGLE_CALLBACK_URL,
   });
 
   res.redirect(authUrl);
@@ -51,12 +46,9 @@ router.get('/google', (req: Request, res: Response) => {
 router.get('/google/callback', async (req: Request, res: Response) => {
   const code = req.query.code as string;
   const error = req.query.error as string;
-  const baseUrl = getBaseUrl(req);
-  const redirectUri = `${baseUrl}/api/auth/google/callback`;
-
   if (error) {
     console.error('Google OAuth error callback:', error);
-    return res.redirect(`${baseUrl}/login?error=${encodeURIComponent(error)}`);
+    return res.redirect(`${env.FRONTEND_URL}/login?error=${encodeURIComponent(error)}`);
   }
 
   if (!code) {
@@ -66,7 +58,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
   try {
     const { tokens } = await oauth2Client.getToken({
       code,
-      redirect_uri: redirectUri,
+      redirect_uri: env.GOOGLE_CALLBACK_URL,
     });
     oauth2Client.setCredentials(tokens);
 
@@ -140,7 +132,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       req.headers['x-forwarded-proto'] === 'https' ||
       Boolean(req.headers['cf-visitor']?.includes('https')) ||
       Boolean(req.headers['cf-ray']) ||
-      baseUrl.startsWith('https://');
+      env.GOOGLE_CALLBACK_URL.startsWith('https://');
 
     // Set cookie with explicit root path and protocol-aware secure attribute
     res.cookie('token', token, {
@@ -157,10 +149,10 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       return res.json({ token, user });
     }
 
-    return res.redirect(`${baseUrl}/auth/callback?token=${token}`);
+    return res.redirect(`${env.FRONTEND_URL}/auth/callback?token=${token}`);
   } catch (err: any) {
     console.error('❌ Error handling Google OAuth callback:', err.message);
-    return res.redirect(`${baseUrl}/login?error=authentication_failed`);
+    return res.redirect(`${env.FRONTEND_URL}/login?error=authentication_failed`);
   }
 });
 
