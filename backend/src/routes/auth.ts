@@ -95,25 +95,38 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       avatar = userInfoResponse.data.picture || null;
     }
 
-    if (!email) {
-      return res.status(400).json({ error: 'Failed to retrieve email address from Google' });
+    if (!email || !googleId) {
+      return res.status(400).json({ error: 'Failed to retrieve Google account identity' });
     }
 
-    // Upsert User record
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {
-        googleId,
-        name,
-        avatar,
-      },
-      create: {
-        googleId,
-        email,
-        name,
-        avatar,
-      },
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+    const userByGoogleId = await prisma.user.findUnique({ where: { googleId } });
+    const userByEmail = userByGoogleId
+      ? null
+      : await prisma.user.findFirst({
+          where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+        });
+
+    const user = userByGoogleId
+      ? await prisma.user.update({
+          where: { id: userByGoogleId.id },
+          data: { email: normalizedEmail, name, avatar },
+        })
+      : userByEmail
+        ? await prisma.user.update({
+            where: { id: userByEmail.id },
+            data: { googleId, email: normalizedEmail, name, avatar },
+          })
+        : await prisma.user.upsert({
+            where: { googleId },
+            update: { email: normalizedEmail, name, avatar },
+            create: {
+              googleId,
+              email: normalizedEmail,
+              name,
+              avatar,
+            },
+          });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -166,14 +179,15 @@ router.post('/dev-login', async (req: Request, res: Response) => {
   }
 
   const { email = 'demo@reachinbox.ai', name = 'Demo User' } = req.body || {};
+  const normalizedEmail = String(email).trim().toLowerCase();
 
   try {
     const user = await prisma.user.upsert({
-      where: { email },
+      where: { email: normalizedEmail },
       update: { name },
       create: {
         googleId: `dev_${Date.now()}`,
-        email,
+        email: normalizedEmail,
         name,
         avatar: 'https://lh3.googleusercontent.com/a/default-user',
       },

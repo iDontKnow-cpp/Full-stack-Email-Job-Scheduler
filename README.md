@@ -75,6 +75,7 @@ A production-grade, distributed email scheduling service and real-time dashboard
 ### 🖥 Backend
 - [x] **No Cron Jobs Constraint**: Strictly uses BullMQ delayed jobs backed by Redis sorted sets (`ZADD`). No OS cron, no `node-cron`, no `agenda`.
 - [x] **Relational Persistence**: All campaigns and individual email jobs are stored in PostgreSQL via Prisma with explicit states: `SCHEDULED`, `QUEUED`, `SENDING`, `SENT`, `FAILED`, and `RATE_LIMITED`.
+- [x] **Cross-device Accounts**: Google sign-ins resolve to the same database user using Google's stable account ID, so campaigns and email jobs remain available across devices connected to the same deployment/database.
 - [x] **Restart & Crash Resilience**:
   - Delayed jobs stay persisted in Redis with AOF persistence.
   - On backend startup, `recoverPendingJobs()` scans the database for any past-due jobs and re-enqueues them automatically.
@@ -103,6 +104,7 @@ A production-grade, distributed email scheduling service and real-time dashboard
 ### 🎨 Frontend
 - [x] **Google OAuth Login**:
   - Sign-in with Google button following the official design.
+  - Signed-in users are redirected to the dashboard when opening the login route.
   - Displays user profile (avatar, name, email) in header navigation.
   - One-click sign-out with session termination.
   - Dev login button enabled in development environments for immediate testing.
