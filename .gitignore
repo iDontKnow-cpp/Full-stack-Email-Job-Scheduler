@@ -11,3 +11,4 @@ vite.config.js
 vite.config.d.ts
 secret.yaml
 .gitignore
+cloudflare-quicktest.yaml

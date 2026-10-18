@@ -13,7 +13,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: prisma-migrate
-          image: ujjwalrajpurohit/full-stack-email-job-scheduler:back.2
+          image: ujjwalrajpurohit/full-stack-email-job-scheduler:back.3
           imagePullPolicy: IfNotPresent
           command:
             - npx
