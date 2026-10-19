@@ -6,7 +6,7 @@ metadata:
 data:
   PORT: "3001"
   NODE_ENV: "production"
-  FRONTEND_URL: "https://diagram-hottest-cancellation-ada.trycloudflare.com"
+  FRONTEND_URL: "https://kinda-ver-apply-fly.trycloudflare.com"
 
   # Internal cluster DNS endpoints
   REDIS_HOST: "redis-service"
@@ -19,5 +19,5 @@ data:
   MAX_EMAILS_PER_HOUR_PER_SENDER: "200"
 
   # OAuth Callback URLs
-  GOOGLE_CALLBACK_URL: "https://diagram-hottest-cancellation-ada.trycloudflare.com/api/auth/google/callback"
-  SLACK_REDIRECT_URI: "https://diagram-hottest-cancellation-ada.trycloudflare.com/api/slack/callback"
+  GOOGLE_CALLBACK_URL: "https://kinda-ver-apply-fly.trycloudflare.com/api/auth/google/callback"
+  SLACK_REDIRECT_URI: "https://kinda-ver-apply-fly.trycloudflare.com/api/slack/callback"
